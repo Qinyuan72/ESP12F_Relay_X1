@@ -4,18 +4,21 @@
 #include <ArduinoOTA.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include <OneWire.h> 
+#include <OneWire.h>
 #include <DallasTemperature.h>
 #ifndef STASSID
 #define STASSID "Xiaomi_3D3E"
 #define STAPSK  "2019newpassword"
 #endif
 #define ONE_WIRE_BUS 4
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
 
 const char* ssid = "Xiaomi_3D3E";
 const char* password = "2019newpassword";
 
-//const int output5 = 16;
+const int output5 = 5;
 //const int output4 = 5;
 
 WiFiServer wifiServer(8080);
@@ -24,7 +27,7 @@ LiquidCrystal_I2C lcd(0x3F, 16, 2);
 // Current time
 unsigned long currentTime = millis();
 // Previous time
-unsigned long previousTime = 0; 
+unsigned long previousTime = 0;
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 2000;
 
@@ -103,38 +106,49 @@ void setup() {
   // digitalWrite(output5, LOW);
   //digitalWrite(output4, LOW);
 
- //   Connect to Wi-Fi network with SSID and password
-    Wire.begin(0, 2);
-    lcd.begin();
-    lcd.print("LCD,Initalized.");
-    delay(1000);
-    lcd.clear();   
-    lcd.print("Wi-Fi connected                         ");
-    lcd.print("IP");
-    lcd.print(WiFi.localIP());
-    wifiServer.begin();
- 
-    OneWire oneWire(ONE_WIRE_BUS); 
-    DallasTemperature sensors(&oneWire);
+  //    Connect to Wi-Fi network with SSID and password
+  Wire.begin(0, 2);
+  lcd.begin();
+  lcd.print("LCD,Initalized.");
+  delay(1000);
+  lcd.clear();
+  lcd.print("Wi-Fi connected                         ");
+  lcd.print("IP");
+  lcd.print(WiFi.localIP());
+  wifiServer.begin();
+
+  OneWire oneWire(ONE_WIRE_BUS);
+  DallasTemperature sensors(&oneWire);
+  sensors.begin();
+
+  pinMode(output5, OUTPUT);
+}
 
 
 void loop() {
   ArduinoOTA.handle();
 
 
-   // call sensors.requestTemperatures() to issue a global temperature 
- // request to all devices on the bus 
-/********************************************************************/
- Serial.print(" Requesting temperatures..."); 
- sensors.requestTemperatures(); // Send the command to get temperature readings 
- Serial.println("DONE"); 
- lcd.clear(); 
- lcd.print("temp");
- lcd.print(sensors.getTempCByIndex(0));
-/********************************************************************/
- Serial.print("Temperature is: "); 
- Serial.print(sensors.getTempCByIndex(0)); // Why "byIndex"?  
-   // You can have more than one DS18B20 on the same bus.  
-   // 0 refers to the first IC on the wire 
-   delay(1000); 
+  // call sensors.requestTemperatures() to issue a global temperature
+  // request to all devices on the bus
+  /********************************************************************/
+  Serial.print(" Requesting temperatures...");
+  sensors.requestTemperatures(); // Send the command to get temperature readings
+  Serial.println("DONE");
+  lcd.clear();
+  lcd.print("temp");
+  lcd.print(sensors.getTempCByIndex(0));
+  /********************************************************************/
+  Serial.print("Temperature is: ");
+  Serial.print(sensors.getTempCByIndex(0)); // Why "byIndex"?
+  // You can have more than one DS18B20 on the same bus.
+  // 0 refers to the first IC on the wire
+  if (sensors.getTempCByIndex(0) < 24) {
+    digitalWrite(output5, HIGH);
+  }
+  else{
+    digitalWrite(output5, LOW);
+  }
+  delay(1000);
+
 }
