@@ -153,7 +153,7 @@ void loop() {
   sensors.requestTemperatures(); // Send the command to get temperature readings
   Serial.println("DONE");
   lcd.clear();
-  lcd.print("temp:");
+  lcd.print("Temp:");
   lcd.print(sensors.getTempCByIndex(0));
   /********************************************************************/
   Serial.print("Temperature is: ");
@@ -171,7 +171,7 @@ void loop() {
       digitalWrite(output5, HIGH);
       sensors.requestTemperatures();
       lcd.clear();
-      lcd.print("temp:");
+      lcd.print("Temp:");
       lcd.print(sensors.getTempCByIndex(0));
       lcd.print(" ON");
       lcd.setCursor(0 , 1);
