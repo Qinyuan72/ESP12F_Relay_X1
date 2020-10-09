@@ -20,6 +20,7 @@ const char* password = "2019newpassword";
 
 const int output5 = 5;
 //const int output4 = 5;
+int TimeHaltLoopCount = 180;
 
 WiFiServer wifiServer(8080);
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
@@ -122,6 +123,18 @@ void setup() {
   sensors.begin();
 
   pinMode(output5, OUTPUT);
+  while (TimeHaltLoopCount > 0)
+  {
+    digitalWrite(output5, LOW);
+    ArduinoOTA.handle();
+    TimeHaltLoopCount = TimeHaltLoopCount - 1;
+    lcd.clear();
+    lcd.print("StartIn: ");
+    lcd.print(TimeHaltLoopCount);
+    lcd.print(" Sec");
+    delay(1000);
+  }
+  
 }
 
 
@@ -136,15 +149,28 @@ void loop() {
   sensors.requestTemperatures(); // Send the command to get temperature readings
   Serial.println("DONE");
   lcd.clear();
-  lcd.print("temp");
+  lcd.print("temp:");
   lcd.print(sensors.getTempCByIndex(0));
   /********************************************************************/
   Serial.print("Temperature is: ");
+  lcd.print(" OFF");
   Serial.print(sensors.getTempCByIndex(0)); // Why "byIndex"?
   // You can have more than one DS18B20 on the same bus.
   // 0 refers to the first IC on the wire
-  if (sensors.getTempCByIndex(0) < 24) {
+  if (sensors.getTempCByIndex(0) > -15) {
     digitalWrite(output5, HIGH);
+    while (sensors.getTempCByIndex(0) > -20)
+    {
+      ArduinoOTA.handle();
+      digitalWrite(output5, HIGH);
+      delay(1000);
+      sensors.requestTemperatures();
+      lcd.clear();
+      lcd.print("temp:");
+      lcd.print(sensors.getTempCByIndex(0));
+      lcd.print(" ON");
+    }
+    
   }
   else{
     digitalWrite(output5, LOW);
