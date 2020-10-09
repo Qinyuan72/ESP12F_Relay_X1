@@ -22,9 +22,14 @@ const char* password = "2019newpassword";
 const int output5 = 5; //Un-comment this when rumming.
 
 int TimeHaltLoopCount = 180;// in second, should be set to 180s.
-int TimeOnLoopCount   = 0;
+int TimeOnLoopCount     = 0;
 int TimeOnLoopCount_min = 0;
+int TimeOnLoopCount_h   = 0;
 int Delaytime = 20;//milliseconds
+const int RangeTop    = -15;
+const int Rangebottom = -20;
+
+
 
 WiFiServer wifiServer(8080);
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
@@ -161,10 +166,10 @@ void loop() {
   Serial.print(sensors.getTempCByIndex(0)); // Why "byIndex"?
   // You can have more than one DS18B20 on the same bus.
   // 0 refers to the first IC on the wire
-  if (sensors.getTempCByIndex(0) > -15) {
+  if (sensors.getTempCByIndex(0) > RangeTop) {
     digitalWrite(output5, HIGH);
     delay(Delaytime);
-    while (sensors.getTempCByIndex(0) > -20)
+    while (sensors.getTempCByIndex(0) > Rangebottom)
     {
       TimeOnLoopCount = TimeOnLoopCount + 1;
       ArduinoOTA.handle();
@@ -175,17 +180,25 @@ void loop() {
       lcd.print(sensors.getTempCByIndex(0));
       lcd.print(" ON");
       lcd.setCursor(0 , 1);
-      if (TimeOnLoopCount % 2 == 1) {
+      if (TimeOnLoopCount % 3 == 1) {
         lcd.print(WiFi.localIP());
+      }
+      else if (TimeOnLoopCount % 3 == 2) {
+        lcd.print("Range: ");
+        lcd.print(RangeTop);
+        lcd.print("/");
+        lcd.print(Rangebottom);
       }
       else {
         lcd.print("Time:");
+        TimeOnLoopCount_h   = TimeOnLoopCount / 3600;
         TimeOnLoopCount_min = TimeOnLoopCount / 60;
+        lcd.print(TimeOnLoopCount_h);
+        lcd.print('H');
         lcd.print(TimeOnLoopCount_min);
         lcd.print('M');
         lcd.print(TimeOnLoopCount % 60);
         lcd.print('S');
-        delay(100);
       }
       delay(1000);
     }
@@ -196,9 +209,18 @@ void loop() {
   if (TimeOnLoopCount % 2 == 1) {
     lcd.print(WiFi.localIP());
   }
+  else if (TimeOnLoopCount % 3 == 2) {
+    lcd.print("Range: ");
+    lcd.print(RangeTop);
+    lcd.print("/");
+    lcd.print(Rangebottom);
+  }
   else {
     lcd.print("Time:");
+    TimeOnLoopCount_h   = TimeOnLoopCount / 3600;
     TimeOnLoopCount_min = TimeOnLoopCount / 60;
+    lcd.print(TimeOnLoopCount_h);
+    lcd.print('H');
     lcd.print(TimeOnLoopCount_min);
     lcd.print('M');
     lcd.print(TimeOnLoopCount % 60);
