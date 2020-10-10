@@ -169,6 +169,7 @@ void loop() {
   if (sensors.getTempCByIndex(0) > RangeTop) {
     digitalWrite(output5, HIGH);
     delay(Delaytime);
+    TimeOnLoopCount = 0;//Reset TimeOnLoopCount
     while (sensors.getTempCByIndex(0) > Rangebottom)
     {
       TimeOnLoopCount = TimeOnLoopCount + 1;
