@@ -25,6 +25,7 @@ int TimeHaltLoopCount = 180;// in second, should be set to 180s.
 int TimeOnLoopCount     = 0;
 int TimeOnLoopCount_min = 0;
 int TimeOnLoopCount_h   = 0;
+int LoopCount = 0;
 int Delaytime = 20;//milliseconds
 const int RangeTop    = -15;
 const int Rangebottom = -20;
@@ -149,10 +150,7 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();
 
-
-  // call sensors.requestTemperatures() to issue a global temperature
-  // request to all devices on the bus
-  /********************************************************************/
+  
   TimeOnLoopCount = TimeOnLoopCount + 1;
   Serial.print(" Requesting temperatures...");
   sensors.requestTemperatures(); // Send the command to get temperature readings
@@ -160,16 +158,12 @@ void loop() {
   lcd.clear();
   lcd.print("Temp:");
   lcd.print(sensors.getTempCByIndex(0));
-  /********************************************************************/
-  Serial.print("Temperature is: ");
   lcd.print(" OFF");
-  Serial.print(sensors.getTempCByIndex(0)); // Why "byIndex"?
-  // You can have more than one DS18B20 on the same bus.
-  // 0 refers to the first IC on the wire
   if (sensors.getTempCByIndex(0) > RangeTop) {
     digitalWrite(output5, HIGH);
     delay(Delaytime);
     TimeOnLoopCount = 0;//Reset TimeOnLoopCount
+    LoopCount = LoopCount + 1;//loopCount + 1, This is the window to count the loop
     while (sensors.getTempCByIndex(0) > Rangebottom)
     {
       TimeOnLoopCount = TimeOnLoopCount + 1;
@@ -216,6 +210,18 @@ void loop() {
     lcd.print("/");
     lcd.print(Rangebottom);
   }
+  else if (LoopCount = 50){
+    lcd.print("Routing restart");
+    delay(1000);
+    lcd.setCursor(0 , 1);
+    lcd.print(" 3");
+    delay(1000);
+    lcd.print(" 2");
+    delay(1000);
+    lcd.print(" 1");  
+    delay(1000);
+    ESP.restart();
+    }
   else {
     lcd.print("Time:");
     TimeOnLoopCount_h   = TimeOnLoopCount / 3600;
