@@ -21,6 +21,7 @@ const char* password = "2019newpassword";
 //const int output5 = 16;  //Comment for testing,
 const int output5 = 5; //Un-comment this when rumming.
 
+
 int TimeHaltLoopCount = 180;// in second, should be set to 180s.
 int TimeOnLoopCount     = 0;
 int TimeOnLoopCount_min = 0;
@@ -60,7 +61,7 @@ void setup() {
   // ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-  // ArduinoOTA.setHostname("myesp8266");
+  ArduinoOTA.setHostname("ESP12F_Relay_x");
 
   // No authentication by default
   // ArduinoOTA.setPassword("admin");
@@ -115,7 +116,7 @@ void setup() {
   //digitalWrite(output4, LOW);
 
   //    Connect to Wi-Fi network with SSID and password
-  Wire.begin(0, 2);
+  Wire.begin(2, 0);
   lcd.begin();
   lcd.print("LCD,Initalized.");
   delay(1000);
@@ -150,7 +151,7 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();
 
-  
+
   TimeOnLoopCount = TimeOnLoopCount + 1;
   Serial.print(" Requesting temperatures...");
   sensors.requestTemperatures(); // Send the command to get temperature readings
@@ -201,27 +202,40 @@ void loop() {
   }
   digitalWrite(output5, LOW);
   lcd.setCursor(0 , 1);
-  if (TimeOnLoopCount % 2 == 1) {
-    lcd.print(WiFi.localIP());
+  if (LoopCount > 50) {
+    lcd.print("Routing restart");
+    delay(1000);
+    lcd.setCursor(0 , 1);
+    lcd.print(" 8");
+    delay(1000);
+    lcd.print(" 7");
+    delay(1000);
+    lcd.print(" 6");
+    delay(1000);
+    lcd.print(" 5");
+    delay(1000);
+    lcd.print(" 4");
+    delay(1000);
+    lcd.print(" 3");
+    delay(1000);
+    lcd.print(" 2");
+    delay(1000);
+    lcd.print(" 1");
+    delay(1000);
+    lcd.clear();
+    lcd.print("Restarting...");
+    ESP.restart();
   }
+  else if (TimeOnLoopCount % 2 == 1) {
+    lcd.print(WiFi.localIP());
+  } 
   else if (TimeOnLoopCount % 3 == 2) {
     lcd.print("Range: ");
     lcd.print(RangeTop);
     lcd.print("/");
     lcd.print(Rangebottom);
   }
-  else if (LoopCount = 50){
-    lcd.print("Routing restart");
-    delay(1000);
-    lcd.setCursor(0 , 1);
-    lcd.print(" 3");
-    delay(1000);
-    lcd.print(" 2");
-    delay(1000);
-    lcd.print(" 1");  
-    delay(1000);
-    ESP.restart();
-    }
+
   else {
     lcd.print("Time:");
     TimeOnLoopCount_h   = TimeOnLoopCount / 3600;
