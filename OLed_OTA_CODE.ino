@@ -3,24 +3,22 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#ifndef STASSID
-#define STASSID "Xiaomi_3D3E"
-#define STAPSK  "2019newpassword"
-#endif
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #define ONE_WIRE_BUS 4
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
+bool inrange = false;
 
-const char* ssid = "Xiaomi_3D3E";
-const char* password = "2019newpassword";
+const char* ssid = "CMCC-201";
+const char* password = "18639289390";
+
 
 //const int output5 = 16;  //Comment for testing,
 const int output5 = 5; //Un-comment this when rumming.
-
 
 int TimeHaltLoopCount = 180;// in second, should be set to 180s.
 int TimeOnLoopCount     = 0;
@@ -34,7 +32,6 @@ const int Rangebottom = -20;
 
 
 WiFiServer wifiServer(8080);
-LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
 // Current time
 unsigned long currentTime = millis();
@@ -46,22 +43,52 @@ const long timeoutTime = 2000;
 WiFiServer server(80);
 
 
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Booting");
+
+  Wire.begin(0, 2);
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);
+  }
+  delay(2000);
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.println("OLED,Initalized.");
+  display.display();
+  delay(1000);
+
+  display.fillRect(0, 0, 128, 32, WHITE);
+  display.display();
+  delay(1000);
+  display.display();
+  display.setCursor(0, 0);
+  display.setTextColor(BLACK);
+  display.setTextSize(2);
+  display.println("Conncting WiFi");
+  display.display();
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.println("Connection Failed! Rebooting...");
+    Serial.println("No wifi~~~~");
     delay(5000);
-    ESP.restart();
+    break;
   }
 
   // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-  ArduinoOTA.setHostname("ESP12F_Relay_x");
+  // ArduinoOTA.setHostname("myesp8266");
 
   // No authentication by default
   // ArduinoOTA.setPassword("admin");
@@ -116,32 +143,38 @@ void setup() {
   //digitalWrite(output4, LOW);
 
   //    Connect to Wi-Fi network with SSID and password
-  Wire.begin(2, 0);
-  lcd.begin();
-  lcd.print("LCD,Initalized.");
-  delay(1000);
-  lcd.clear();
-  lcd.print("Wi-Fi connected                         ");
-  lcd.print("IP");
-  lcd.print(WiFi.localIP());
+
+
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("Wi-Fi connected");
+  display.println(WiFi.localIP());
+  display.display();
   wifiServer.begin();
+  delay(5000);
 
   OneWire oneWire(ONE_WIRE_BUS);
   DallasTemperature sensors(&oneWire);
   sensors.begin();
 
   pinMode(output5, OUTPUT);
+  digitalWrite(output5, LOW);
+
   while (TimeHaltLoopCount > 0)
   {
-    digitalWrite(output5, LOW);
-    ArduinoOTA.handle();
     TimeHaltLoopCount = TimeHaltLoopCount - 1;
-    lcd.clear();
-    lcd.print("StartIn: ");
-    lcd.print(TimeHaltLoopCount);
-    lcd.print(" Sec");
-    lcd.setCursor(0 , 1);
-    lcd.print(WiFi.localIP());
+    ArduinoOTA.handle();
+    display.clearDisplay();
+    display.setCursor(58, 0);
+    display.setTextSize(3);
+    display.println(TimeHaltLoopCount);
+    display.setTextSize(1);
+    display.setCursor(25, 25);
+    display.println(WiFi.localIP());
+    display.display();
+    Serial.println(TimeHaltLoopCount);
     delay(1000);
   }
 
@@ -150,18 +183,15 @@ void setup() {
 
 void loop() {
   ArduinoOTA.handle();
-
+  inrange = false;
 
   TimeOnLoopCount = TimeOnLoopCount + 1;
-  Serial.print(" Requesting temperatures...");
   sensors.requestTemperatures(); // Send the command to get temperature readings
-  Serial.println("DONE");
-  lcd.clear();
-  lcd.print("Temp:");
-  lcd.print(sensors.getTempCByIndex(0));
-  lcd.print(" OFF");
+  oldedisplay(inrange);
+
   if (sensors.getTempCByIndex(0) > RangeTop) {
     digitalWrite(output5, HIGH);
+    inrange = true;
     delay(Delaytime);
     TimeOnLoopCount = 0;//Reset TimeOnLoopCount
     LoopCount = LoopCount + 1;//loopCount + 1, This is the window to count the loop
@@ -171,81 +201,35 @@ void loop() {
       ArduinoOTA.handle();
       digitalWrite(output5, HIGH);
       sensors.requestTemperatures();
-      lcd.clear();
-      lcd.print("Temp:");
-      lcd.print(sensors.getTempCByIndex(0));
-      lcd.print(" ON");
-      lcd.setCursor(0 , 1);
-      if (TimeOnLoopCount % 3 == 1) {
-        lcd.print(WiFi.localIP());
-      }
-      else if (TimeOnLoopCount % 3 == 2) {
-        lcd.print("Range: ");
-        lcd.print(RangeTop);
-        lcd.print("/");
-        lcd.print(Rangebottom);
-      }
-      else {
-        lcd.print("Time:");
-        TimeOnLoopCount_h   = TimeOnLoopCount / 3600;
-        TimeOnLoopCount_min = TimeOnLoopCount / 60;
-        lcd.print(TimeOnLoopCount_h);
-        lcd.print('H');
-        lcd.print(TimeOnLoopCount_min);
-        lcd.print('M');
-        lcd.print(TimeOnLoopCount % 60);
-        lcd.print('S');
-      }
+      oldedisplay(inrange);
       delay(1000);
     }
     TimeOnLoopCount = 0;
   }
-  digitalWrite(output5, LOW);
-  lcd.setCursor(0 , 1);
-  if (LoopCount > 50) {
-    lcd.print("Routing restart");
-    delay(1000);
-    lcd.setCursor(0 , 1);
-    lcd.print(" 8");
-    delay(1000);
-    lcd.print(" 7");
-    delay(1000);
-    lcd.print(" 6");
-    delay(1000);
-    lcd.print(" 5");
-    delay(1000);
-    lcd.print(" 4");
-    delay(1000);
-    lcd.print(" 3");
-    delay(1000);
-    lcd.print(" 2");
-    delay(1000);
-    lcd.print(" 1");
-    delay(1000);
-    lcd.clear();
-    lcd.print("Restarting...");
-    ESP.restart();
-  }
-  else if (TimeOnLoopCount % 2 == 1) {
-    lcd.print(WiFi.localIP());
-  } 
-  else if (TimeOnLoopCount % 3 == 2) {
-    lcd.print("Range: ");
-    lcd.print(RangeTop);
-    lcd.print("/");
-    lcd.print(Rangebottom);
-  }
-
-  else {
-    lcd.print("Time:");
-    TimeOnLoopCount_h   = TimeOnLoopCount / 3600;
-    TimeOnLoopCount_min = TimeOnLoopCount / 60;
-    lcd.print(TimeOnLoopCount_h);
-    lcd.print('H');
-    lcd.print(TimeOnLoopCount_min);
-    lcd.print('M');
-    lcd.print(TimeOnLoopCount % 60);
-    lcd.print('S');
-  }
   delay(1000);
+  digitalWrite(output5, LOW);
+}
+
+int oldedisplay(bool i) {
+  display.clearDisplay();
+  display.setCursor(0, 5);
+  display.setTextSize(3);
+  display.println(sensors.getTempCByIndex(0));
+  display.setTextSize(3);
+  display.drawCircle(128 - 16, 16, 10, WHITE);
+
+  Serial.print("Temp: ");
+  Serial.print(sensors.getTempCByIndex(0));
+  Serial.print(" C     LocalIP: ");
+  Serial.print(WiFi.localIP());
+
+  if (i == true) {
+    display.fillCircle(128 - 16, 16, 10, WHITE);
+    Serial.println("    Status: ON ");
+  }
+  else
+  {
+    Serial.println("    Status: Off");
+  }
+  display.display();
 }

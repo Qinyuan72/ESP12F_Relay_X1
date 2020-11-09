@@ -1,3 +1,6 @@
+#include <Adafruit_SSD1306.h>
+#include <splash.h>
+
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
